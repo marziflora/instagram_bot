@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[ ]:
+# In[131]:
 
 
 from selenium import webdriver
@@ -10,16 +10,12 @@ import numpy as np
 from random import seed, randint
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver import ActionChains
+import pandas as pd
+import re
+import random
 
-hasztags = ["portraits", "portraitsfromwroclaw", "sesjazdjeciowawroclaw", 'wroclawgirl', 'dolnyslask', 'wroclaw', 'wrocław','polskichlopak', 'fotografwroclaw']
-driver = webdriver.Chrome("C:/Users/mkwasnicka/Downloads/chromedriver_win32/chromedriver.exe")
-users_omit = ['']
-
-def save(x):
-    f = open('photos.txt', 'a')
-    f.write(x)
-    f.write("\n")
-    f.close()
+hasztags = ["portraits", "portraitsfromwroclaw", "sesjazdjeciowawroclaw", 'wroclawgirl', 'dolnyslask', 'wroclaw', 'wrocław','polskichlopak', 'fotografwroclaw', 'polska']
+driver = webdriver.Chrome("chromedriver_win32/chromedriver.exe")
 
 def InstaBot_login(username, password, driver):
     driver.get("https://instagram.com")      
@@ -34,64 +30,65 @@ def InstaBot_login(username, password, driver):
         time.sleep(randint(3, 5))
     driver.find_element_by_xpath('//button[@type="submit"]').click()
     time.sleep(randint(3, 5))
-#     while driver.find_element_by_xpath("//button[contains(text(), 'Nie teraz')]") == []:
-#         time.sleep(sleeptime+1)
-#     driver.find_element_by_xpath("//button[contains(text(), 'Nie teraz')]").click()
-        
-def go_to_hasztag(driver):
+
+def go_to_hasztag(driver, df, df2):
     hasztag_link = 'https://www.instagram.com/explore/tags/'+hasztags[randint(0,len(hasztags)-1)]
     print(hasztag_link)
     driver.get(hasztag_link) 
     #pick random photo, not from 'most popular' page
     time.sleep(randint(3, 5))  
-    driver.find_elements_by_xpath("//div[contains(@class, '_9AhH0')]")[randint(9, len(driver.find_elements_by_xpath("//div[contains(@class, '_9AhH0')]"))-1)].click()
+    driver.find_elements_by_xpath("//div[contains(@class, '_9AhH0')]")[randint(13, len(driver.find_elements_by_xpath("//div[contains(@class, '_9AhH0')]"))-1)].click()
     time.sleep(randint(5, 8))    
     driver.find_elements_by_xpath("//div[contains(@class, 'QBdPU ')]")[-4].click() #like it
     #Go to profiles that liked that photo
-    time.sleep(randint(3,3))
+    time.sleep(randint(3,4))
+#     print(len(driver.find_elements_by_xpath("//div[contains(@class, '_7UhW9   xLCgt      MMzan  KV-D4              fDxYl')] | //span[@class='Jv7Aj mArmR MqpiF  ']")))
     try:
-        driver.find_element_by_class_name('zV_Nj').click() 
+        driver.find_element_by_class_name('zV_Nj').click() #who like it?
+    except:
+        return None, None
+    else:
         time.sleep(randint(3,4))
         elems = driver.find_elements_by_css_selector("[href]")
         links = [elem.get_attribute('href') for elem in elems]
-        profiles = np.unique([i for i in links if re.search(r'^https://www.instagram.com/([\w.]*)(/$)',i) and i!='https://www.instagram.com/explore/' and i!='https://www.instagram.com/developer/' and i!='https://www.instagram.com/marzenakwasnicka.fotografia/'], axis=0).tolist()                  
-        go_to_likers(driver, profiles)
-    except:
-        pass
+        profiles = np.unique([i for i in links if re.search(r'^https://www.instagram.com/([\w.]*)(/$)',i) and i!='https://www.instagram.com/explore/' and i!='https://www.instagram.com/developer/' and i!='https://www.instagram.com/marzenakwasnicka.fotografia/'], axis=0).tolist()  
+        new_tags = [i.split("/")[-2] for i in np.unique([i for i in links if re.search(r'^https://www.instagram.com/explore/tags/([\w.]*)(/$)',i)], axis=0).tolist()]
+        if len(profiles)>1:
+            selected_profiles = random.sample(profiles, min(10, len(profiles)))
+            for i in selected_profiles:
+                driver.get(i)   #go to its page
+                time.sleep(randint(3,5))
+                photos = len(driver.find_elements_by_xpath("//div[contains(@class, '_9AhH0')]"))
+                if photos>0:
+                    how_much_like = min(int(photos*0.8), randint(4, 8))
+                    which_to_like = random.sample(list(range(min(photos,13))), how_much_like)
+                    for j in which_to_like: 
+                        driver.find_elements_by_xpath("//div[contains(@class, '_9AhH0')]")[j].click() #click on photo
+                        time.sleep(randint(3,5))
+                        driver.find_elements_by_xpath("//div[contains(@class, 'QBdPU ')]")[-4].click() #like its photo
+                        time.sleep(randint(3,5))
+                        webdriver.ActionChains(driver).send_keys(Keys.ESCAPE).perform() #return to last page
+                        time.sleep(randint(1,3))
+                    print(i.split("/")[-2], which_to_like)
+                    df = df.append(pd.DataFrame([[i.split("/")[-2],str(which_to_like)]], columns=['profil', 'zdjecia']))
+        df2 = set(new_tags)
+        return df, df2
         
-def go_to_likers(driver, profiles):
-    if len(profiles)>1:
-        profiles = random.sample(profiles, min(10, len(profiles)))
-        print(profiles)
-        for i in profiles:
-            driver.get(i)   #go to its page
-            time.sleep(randint(3,5))
-            photos = len(driver.find_elements_by_xpath("//div[contains(@class, '_9AhH0')]"))
-            if photos>1:
-                how_much_like = min(int(photos*0.8), 8)
-                which_to_like = random.sample(list(range(min(photos,13))), how_much_like)
-                print("Which photo to like:", which_to_like)  
-                for j in which_to_like: 
-                    driver.find_elements_by_xpath("//div[contains(@class, '_9AhH0')]")[j].click() #click on photo
-                    time.sleep(randint(3,5))
-                    driver.find_elements_by_xpath("//div[contains(@class, 'QBdPU ')]")[-4].click() #like its photo
-                    time.sleep(randint(5,10))
-                    webdriver.ActionChains(driver).send_keys(Keys.ESCAPE).perform() #return to last page
-                    time.sleep(randint(3,5))
-                text = f"{i} : {which_to_like}\n"
-                save(text)
-
-InstaBot_login("marzenakwasnicka.fotografia", "Westernblot2449", driver)
+password = open('instagrampassword.txt').read()
+InstaBot_login("marzenakwasnicka.fotografia", password, driver)
 while True:
     for i in range(0,5):
-        go_to_hasztag(driver)
-        time.sleep(randint(10, 12))
+        df = pd.read_csv("like.csv", sep=';')
+        df, df2 = go_to_hasztag(driver, df, df2)
+        if all(df) == True:
+            df.to_csv("like.csv", index=False)
+            f = open("hasztag.txt", 'r+')
+            read = f.read()
+            f = open("hasztag.txt", 'w+')
+            x = set(read.split(" "))
+            x = " ".join(x)
+            f.write(x)
+        time.sleep(randint(3, 6))
     time.sleep(randint(10, 60))
-    go_to_hasztag(driver)
-
-
-# In[ ]:
-
-
-
+    go_to_hasztag(driver,df, df2)
 
