@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[191]:
+# In[ ]:
 
 
 import instaloader
 L = instaloader.Instaloader()
 
+password = open('instagrampassword.txt').read()
 L.login("marzenakwasnicka.fotografia", password)
 # Obtain profile metadata
 profile = instaloader.Profile.from_username(L.context, "marzenakwasnicka.fotografia")
@@ -22,7 +23,7 @@ file.write(" \n".join(follow_list))
 file.close()
 
 
-# In[249]:
+# In[ ]:
 
 
 from selenium import webdriver
@@ -49,13 +50,25 @@ def InstaBot_login(username, password, driver):
     driver.find_element_by_xpath("//input[@name=\"password\"]").send_keys(password)
     while driver.find_element_by_xpath("//button[contains(text(), 'Akceptuję')]") == []:
         time.sleep(randint(3, 5))   
-    driver.find_element_by_xpath("//button[contains(text(), 'Akceptuję')]").click()
-    while driver.find_element_by_xpath('//button[@type="submit"]') == []:
-        time.sleep(randint(3, 5))
+    driver.find_element_by_xpath("//button[contains(text(), 'Akceptuję wszystko')]").click()
+    try:
+        print(driver.find_element_by_class_name("sqdOP"))
+    except:
+        print("Nieznaleziono")
+
+#     print(driver.find_element_by_xpath('//div[@class="sqdOP  L3NKy   y3zKF     "]'))
+#     print(driver.find_element_by_xpath('//div[@class="sqdOP  L3NKy   y3zKF     "]//button[1]'))
+
+#     while driver.find_element_by_xpath("//button[contains(text(), 'Zaloguj się')]").click():
+#         time.sleep(randint(3, 5))       
+#     while driver.find_element_by_xpath("//div[contains(@class, 'sqdOP  L3NKy   y3zKF     ') and contains(text(), 'Zaloguj się')]") == []:
+#         time.sleep(randint(3, 5))    
+#     while driver.find_element_by_xpath('//button[@type="submit"]') == []:
+#         time.sleep(randint(3, 5))
     driver.find_element_by_xpath('//button[@type="submit"]').click()
     time.sleep(randint(3, 5))
 
-def go_to_hasztag(driver, df, df2):
+def go_to_hasztag(driver):
     hasztag_link = 'https://www.instagram.com/explore/tags/'+hasztags[randint(0,len(hasztags)-1)]
     print(hasztag_link)
     driver.get(hasztag_link) 
@@ -64,7 +77,7 @@ def go_to_hasztag(driver, df, df2):
     if len(driver.find_elements_by_xpath("//div[contains(@class, '_9AhH0')]"))>13:
         driver.find_elements_by_xpath("//div[contains(@class, '_9AhH0')]")[randint(13, len(driver.find_elements_by_xpath("//div[contains(@class, '_9AhH0')]"))-1)].click()
         time.sleep(randint(5, 8))    
-        driver.find_elements_by_xpath("//div[contains(@class, 'QBdPU ')]")[-4].click() #like it
+        driver.find_elements_by_xpath("//div[contains(@class, 'QBdPU ')]")[1].click() #like it
         #Go to profiles that liked that photo
         time.sleep(randint(3,4))
         try:
@@ -92,7 +105,7 @@ def go_to_hasztag(driver, df, df2):
                             for j in which_to_like: 
                                 driver.find_elements_by_xpath("//div[contains(@class, '_9AhH0')]")[j].click() #click on photo
                                 time.sleep(randint(3,5))
-                                driver.find_elements_by_xpath("//div[contains(@class, 'QBdPU ')]")[-4].click() #like its photo
+                                driver.find_elements_by_xpath("//div[contains(@class, 'QBdPU ')]")[2].click() #like its photo
                                 time.sleep(randint(1,3))
                                 webdriver.ActionChains(driver).send_keys(Keys.ESCAPE).perform() #return to last page
                                 time.sleep(randint(2,3))
@@ -111,10 +124,10 @@ password = open('instagrampassword.txt').read()
 InstaBot_login("marzenakwasnicka.fotografia", password, driver)
 while True:
     for i in range(0,5):
-        go_to_hasztag(driver, df, df2)
+        go_to_hasztag(driver)
         time.sleep(randint(3, 6))
     time.sleep(randint(10, 60))
-    go_to_hasztag(driver,df, df2)
+    go_to_hasztag(driver)
 
 
 # In[ ]:
